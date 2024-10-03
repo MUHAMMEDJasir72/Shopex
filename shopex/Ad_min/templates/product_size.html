@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+
+
+{% block content %}
+
+
+<div class="p-4">
+    <h1>Product Sizes</h1>
+</div>
+
+
+ <!-- Button trigger modal -->
+ <div class="d-flex justify-content-end me-4">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+        Add New Size
+    </button>
+</div>
+  <!-- Modal -->
+  <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Add New Size</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form action="" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="size" class="form-label">Type size</label>
+              <input type="number" class="form-control" id="size" name="size" placeholder="Enter size"
+              min="10" max="100">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add</button>
+              </div>
+          </form>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+
+
+    <div class="bg-light rounded h-100 p-4">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Size Id</th>
+                        <th scope="col">Sizes(ltr)</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for size in sizes %}
+                    <tr>
+                        <td>{{ size.id }}</td>
+                        <td>{{ size.product_size }}</td>
+                        {% if size.size_status %}
+                            <td><a href="{% url 'change_size_status' size.id %}" class="btn btn-outline-danger">Change To Deactive</a></td>
+                        {% else %}
+                            <td><a href="{% url 'change_size_status' size.id %}" class="btn btn-outline-success">Change To Active</a></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+    
+
+{% endblock %}

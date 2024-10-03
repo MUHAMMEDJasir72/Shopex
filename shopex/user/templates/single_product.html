@@ -1,0 +1,478 @@
+
+
+
+
+
+
+
+
+
+
+{% extends 'user_base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Product Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Overall Page Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+
+        /* Breadcrumb Styles */
+        .breadcrumb {
+            background-color: #f8f9fa;
+            padding: 0;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        /* Product Images */
+        .product-images {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .main-image {
+            flex-grow: 1;
+            overflow: hidden;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative; /* Make it relative for zoom effect */
+        }
+
+        .main-image img {
+            width: 100%;
+            height: 500px; /* Fixed height */
+            object-fit: cover; /* Maintain aspect ratio and cover the entire area */
+            transition: transform 0.3s ease-in-out; /* Smooth transition */
+            border-radius: 8px;
+            cursor: zoom-in; /* Indicate that the image is zoomable */
+        }
+
+        /* Zoom effect */
+        .main-image img.zoomed {
+            transform: scale(2); /* Adjust this scale as per your zoom preference */
+            cursor: zoom-out; /* Change the cursor when zoomed */
+        }
+
+        .thumbnail-images {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .thumbnail-images img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .thumbnail-images img.active,
+        .thumbnail-images img:hover {
+            border-color: #007bff;
+        }
+        /* Review Styles */
+        .review-container {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .review-header h5 {
+            margin: 0;
+        }
+
+        .review-rating {
+            color: #ffcc00; /* Gold color for stars */
+        }
+
+        .review-body {
+            margin-top: 10px;
+        }
+
+        /* Modal Styles */
+        .modal-content {
+            border-radius: 8px;
+        }
+
+        .modal-header {
+            border-bottom: none;
+        }
+
+        .modal-title {
+            font-weight: bold;
+        }
+
+        .btn-close {
+            margin-left: auto;
+        }
+
+        /* Additional styling for the buttons */
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .review-rating {
+    font-size: 1.2em; /* Adjusts the size of the stars */
+}
+
+.filled-star {
+    color: #ffcc00; /* Gold color for filled stars */
+}
+
+.empty-star {
+    color: #d3d3d3; /* Light gray color for empty stars */
+}
+
+    </style>
+
+</head>
+<body>
+    <div class="container my-5">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'shop' %}">Shop</a></li>
+                <li class="breadcrumb-item active" aria-current="">Product Name</li>
+            </ol>
+        </nav>
+         
+        <div class="row">
+            <div class="col-md-5 mx-auto">
+                <div class="product-images">
+                    <div class="thumbnail-images">
+                        {% for image in images %} 
+                        <img src="{{ image.images.url }}" alt="Product Image 1" onclick="changeImage(this.src)" class="active">           
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Main Image -->
+                    <div class="img-zoom-container">
+                        <!-- Main Image -->
+                        <div class="main-image">
+                            <img id="mainProductImage" src="{{ img.url }}" alt="Main Product Image">
+                        </div>
+                    </div> 
+                </div>
+            </div>
+            <!-- ######################################### -->
+            <div class="col-md-6 col-lg-4 mx-auto text-center">
+                <!-- Product Title and Type -->
+                <div class="mb-4">
+                    <h1 class="display-5">{{ product.product_name }}</h1>
+                    <h5 class="text-muted">{{ product.producttype.product_type }}</h5>
+                </div>
+            
+                <!-- Reviews and Stars -->
+                <!-- <div class="mb-3">
+                    <span class="stars text-warning">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
+                    <span class="text-muted">(150 Reviews)</span>
+                </div> -->
+            
+                <!-- Product Brand, Size, Stock, and Price -->
+                <div class="mb-3">
+                    <h5 class="fw-bold">{{ product.productbrand.brand_name }}</h5>
+                    <h6>Size: <span class="text-muted">{{ product.productsize.product_size }}</span></h6>
+                    <h6>Stock: <span class="text-muted">{{ variant.stock }}</span></h6>
+                      
+                    <!-- Prices centered on one line -->
+                    <div class="d-flex justify-content-center align-items-center">
+                            {% if product.product_offer and product.brand_offer %}
+                                {% if product.brand_offer < product.product_offer %}
+                                    <h2 class="fw-bold text-danger text-decoration-line-through me-3">₹ {{ product.price }}</h2>
+                                    <h2 class="fw-bold text-success">₹ {{ product.brand_offer }}</h2>
+                                    <p class="fw-bold mt-2 ms-2">({{ product.productbrand.brandoffers.first.brand_offer_percentage }}% OFF)</p>
+                                {% else %}
+                                    <h2 class="fw-bold text-danger text-decoration-line-through me-3">₹ {{ product.price }}</h2>
+                                    <h2 class="fw-bold text-success">₹ {{ product.product_offer }}</h2>
+                                    <p class="fw-bold mt-2 ms-2">({{ product.productoffers.first.product_offer_percentage }}% OFF)</p>
+                                {% endif %}
+                            {% elif product.brand_offer %}
+                                <h2 class="fw-bold text-danger text-decoration-line-through me-3">₹ {{ product.price }}</h2>
+                                <h2 class="fw-bold text-success">₹ {{ product.brand_offer }}</h2>
+                                <p class="fw-bold mt-2 ms-2">({{ product.productbrand.brandoffers.first.brand_offer_percentage }}% OFF)</p>
+                            {% elif product.product_offer %}
+                                <h2 class="fw-bold text-danger text-decoration-line-through me-3">₹ {{ product.price }}</h2>
+                                <h2 class="fw-bold text-success">₹ {{ product.product_offer }}</h2>
+                                <p class="fw-bold mt-2 ms-2">({{ product.productoffers.first.product_offer_percentage }}% OFF)</p>
+                            {% else %}
+                            <h2 class="fw-bold text-success">₹ {{ product.price }}</h2>
+                        {% endif %}
+                    </div>
+                    
+                    
+                    
+                </div>
+                
+                
+            
+                <!-- Color Selection -->
+                <div class="mb-3">
+                    <label for="color" class="form-label">Color:</label>
+                    <select class="form-select" id="color" name="color">
+                        <option value="{{ variant.id }}" selected>{{ variant.colour }}</option>
+                        {% for color in colors %}
+                            {% if color.id != variant.id %}
+                                <option value="{{ color.id }}">{{ color.colour }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            
+                <!-- Quantity Selection -->
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Quantity:</label>
+                    <div class="input-group">
+                        <button type="button" class="btn btn-outline-secondary" id="decrease">-</button>
+                        <input type="number" class="form-control text-center" id="quantity" value="1" min="1" max="{{ variant.stock }}" readonly>
+                        <button type="button" class="btn btn-outline-secondary" id="increase">+</button>
+                    </div>
+                    <div id="stock-message" class="text-danger mt-2" style="display: none;">Out of stock</div>
+                </div>
+            
+                <!-- Messages (Alerts) -->
+                <div class="container">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show bg-danger text-dark" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 mb-3">
+                    {% if variant.stock <= 0 %}
+                        <p class="text-danger">Out of Stock</p>
+                    {% else %}
+                        <!-- <a href="#" class="btn btn-primary text-white">Buy Now</a> -->
+                        <a id="addToCartLink" href="{% url 'addcart' product.id variant.id image.id %}?next=single_product" class="btn btn-outline-primary">Add to Cart</a>
+                        {% endif %}
+                        <button class="btn btn-outline-secondary">
+                            <a href="{% url 'add_to_wishlist' product.id variant.id image.id %}" style="text-decoration: none; color: inherit;">Add to Wishlist</a>
+                        </button>
+                                            
+                </div>
+            </div>
+            
+            <!-- ######################################### -->
+        </div>
+
+        <!-- Product Description -->
+        <div class="my-5">
+            <h4>Product Description</h4>
+            <p>{{ product.description }}</p>
+        </div> 
+
+   <!-- Button to trigger modal -->
+   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">
+    Submit a Review
+</button>
+
+<!-- Modal Structure -->
+<div class="modal fade" id="reviewModal" tabindex="-1" role="dialog" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reviewModalLabel">Submit a Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{% url 'submit_review' product.id variant.id image.id %}" method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="rating" class="form-label">Rating:</label>
+                        <select class="form-select" id="rating" name="rating" required>
+                            <option value="" disabled selected>Select rating</option>
+                            <option value="1">1 Star</option>
+                            <option value="2">2 Stars</option>
+                            <option value="3">3 Stars</option>
+                            <option value="4">4 Stars</option>
+                            <option value="5">5 Stars</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="review" class="form-label">Review:</label>
+                        <textarea class="form-control" id="review" name="review" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Review Display Section -->
+    <div class="review-section">
+        <h4>Reviews</h4>
+        {% for review in reviews %}
+            <div class="review-container">
+                <div class="review-header">
+                    <h5>{{ review.user.username }} <span class="review-rating">
+                        {% for star in "12345" %}
+                            <span class="{% if star|add:0 <= review.rating %}filled-star{% else %}empty-star{% endif %}">&#9733;</span>
+                        {% endfor %}
+                    </span></h5>
+                    <small class="text-muted">{{ review.created_at|date:"d-m-Y" }}</small>
+                </div>
+                <div class="review-body">
+                    <p>{{ review.comment }}</p>
+                </div>
+            </div>
+        {% empty %}
+            <p>No reviews yet. Be the first to review!</p>
+        {% endfor %}
+    </div>
+</div>
+
+
+
+
+   
+    <script>
+        function changeImage(src) {
+            document.getElementById('mainProductImage').src = src;
+            const thumbnails = document.querySelectorAll('.thumbnail-images img');
+            thumbnails.forEach(img => img.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      document.getElementById('color').addEventListener('change', function() {
+    var variantId = this.value;  // Get the selected variant id
+    var productId = "{{ product.id }}";
+    var imageId = "{{ image.id }}";  // Assuming images.id is available
+    var url = "/single_product/" + productId + "/" + variantId + "/" + imageId + "/";  // Construct the URL
+    window.location.href = url;  // Redirect to the URL
+});
+
+    </script>
+  <script>
+ const quantityInput = document.getElementById('quantity');
+    const increaseButton = document.getElementById('increase');
+    const decreaseButton = document.getElementById('decrease');
+    const stockMessage = document.getElementById('stock-message');
+    const maxStock = parseInt(quantityInput.getAttribute('max')); // Get the max stock from the input's max attribute
+
+    increaseButton.addEventListener('click', () => {
+        let currentValue = parseInt(quantityInput.value);
+        if (currentValue < maxStock) {
+            quantityInput.value = currentValue + 1;
+            stockMessage.style.display = 'none'; // Hide the message when increasing
+        } else {
+            stockMessage.style.display = 'block'; // Show the message when at max stock
+        }
+    });
+
+    decreaseButton.addEventListener('click', () => {
+        if (quantityInput.value > 1) {
+            quantityInput.value = parseInt(quantityInput.value) - 1;
+            stockMessage.style.display = 'none'; // Hide the message when decreasing
+        }
+    });
+
+
+document.getElementById('increase').addEventListener('click', updateCartLink);
+document.getElementById('decrease').addEventListener('click', updateCartLink);
+document.getElementById('quantity').addEventListener('input', updateCartLink);
+
+function updateCartLink() {
+    const quantity = document.getElementById('quantity').value;
+    const productId = "{{ product.id }}";
+    const variantId = "{{ variant.id }}";
+    const imageId = "{{ image.id }}";
+    const addToCartLink = document.getElementById('addToCartLink');
+    
+    addToCartLink.href = `/addcart/${productId}/${variantId}/${imageId}/?quantity=${quantity}`;
+}
+
+// Call the function initially to set the correct link on page load
+updateCartLink();
+
+
+</script>  
+ 
+
+<script>
+    const mainImageContainer = document.querySelector('.main-image');
+        const mainImage = document.getElementById('mainProductImage');
+        let isZoomed = false;
+
+        mainImageContainer.addEventListener('mouseover', (e) => {
+            // Enable zoom on hover
+            zoomImage(e);
+            mainImage.classList.add('zoomed');
+            isZoomed = true;
+        });
+
+        mainImageContainer.addEventListener('mouseout', () => {
+            // Disable zoom when not hovering
+            mainImage.classList.remove('zoomed');
+            isZoomed = false;
+        });
+
+        mainImageContainer.addEventListener('mousemove', (e) => {
+            if (isZoomed) {
+                zoomImage(e);
+            }
+        });
+
+        function zoomImage(e) {
+            const rect = mainImageContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left;  // X position within the image container
+            const y = e.clientY - rect.top;   // Y position within the image container
+
+            // Set the transform origin to the mouse position
+            mainImage.style.transformOrigin = `${x}px ${y}px`;
+        }
+
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
+
+
+{% endblock %}
+
+
+
+
+
+
+

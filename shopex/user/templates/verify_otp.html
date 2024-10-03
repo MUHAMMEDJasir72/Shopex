@@ -1,0 +1,130 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            font-size: 16px;
+            color: #666;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #otp-timer {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        #resend-otp-container {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        #resend-otp-link {
+            color: #007bff;
+            text-decoration: none;
+        }
+        #resend-otp-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Verify OTP</h1>
+        {% if messages %}
+    <div>
+        {% for message in messages %}
+            <div class=" text-danger alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            <label for="otp">Enter OTP:</label>
+            <input type="text" id="otp" name="otp" required>
+            <button type="submit">Verify OTP</button>
+        </form>
+
+        <div id="otp-timer">
+            <p>Time remaining: <span id="remaining-time">{{ remaining_time }}</span> seconds</p>
+        </div>
+
+        <div id="resend-otp-container" style="display: none;">
+            <p>OTP has expired. Please request a new one.</p>
+            <a id="resend-otp-link" href="{% url 'resend_otp' %}">Resend OTP</a>
+        </div>
+    </div>
+
+    <script>
+        let remainingTime = parseInt('{{ remaining_time }}', 10);
+        const timerElement = document.getElementById('remaining-time');
+        const resendOtpContainer = document.getElementById('resend-otp-container');
+        const otpTimerDiv = document.getElementById('otp-timer');
+
+        function startTimer() {
+            const countdownInterval = setInterval(function() {
+                remainingTime--;
+
+                if (remainingTime <= 0) {
+                    clearInterval(countdownInterval);
+                    otpTimerDiv.style.display = 'none';
+                    resendOtpContainer.style.display = 'block';
+                } else {
+                    timerElement.textContent = remainingTime;
+                }
+            }, 1000);
+        }
+
+        window.onload = startTimer;
+    </script>
+</body>
+</html>

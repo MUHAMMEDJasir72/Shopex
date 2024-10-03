@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-4">
+    <h1>Users</h1>
+</div>
+<!-- Search Bar -->
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <form class="d-flex" method="get"> 
+                <input class="form-control me-2 rounded-pill border-dark" type="text" placeholder="Search for users..." name="search" aria-label="Search" value="{{ search_query }}">
+                <button class="btn btn-outline-dark rounded-pill" type="submit">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="bg-light rounded h-100 p-4">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">User_Id</th>
+                    <th scope="col">User name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Date Joined</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in page_obj %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.date_joined|date:"d-m-Y" }}</td>
+                    <td>
+                        {% if user.is_active %}
+                        <a href="{% url 'block_user' user.id %}" class="btn btn-danger btn-sm">Block</a>
+                        {% else %}
+                        <a href="{% url 'unblock_user' user.id %}" class="btn btn-success btn-sm">Unblock</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+     <!-- Pagination -->
+     <div class="d-flex justify-content-center">
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+{% endblock %}
+</div>
+
+

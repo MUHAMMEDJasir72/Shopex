@@ -1,0 +1,277 @@
+{% extends 'user_base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f7f8fa;
+        }
+
+        .custom-list-item {
+            padding: 20px;
+            border-radius: 8px;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .custom-list-item:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .order-info {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .order-info .col {
+            flex: 1;
+            text-align: center;
+        }
+
+        .order-info .product-details {
+            text-align: left;
+        }
+
+        .action-btn {
+            text-align: right;
+        }
+
+        .action-btn button {
+            padding: 8px 12px;
+            border: none;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .action-btn button:hover {
+            background-color: #c82333;
+        }
+
+        .card-header {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .card-body p {
+            margin-bottom: 8px;
+        }
+
+        h3 {
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+
+        .order-status {
+            margin-bottom: 40px;
+        }
+
+        @media (min-width: 768px) {
+            .custom-list-item {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container py-5">
+        <h2 class="mb-5 text-center text-primary">Order Details</h2>
+
+        <!-- Shipping Address -->
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Shipping Address</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Full Name:</strong> {{ address.fullname }}</p>
+                        <p><strong>Mobile Number:</strong> {{ address.mobil_number }}</p>
+                        <p><strong>Address:</strong> {{ address.address }}</p>
+                        <p><strong>Landmark:</strong> {{ address.landmark }}</p>
+                        <p><strong>City:</strong> {{ address.city }}</p>
+                        <p><strong>State:</strong> {{ address.state }}</p>
+                        <p><strong>Pincode:</strong> {{ address.pincode }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="text-center">Total Amount: ₹ {{ order.total_amount }}</h3>
+
+        <!-- Payment and Order Status -->
+        <div class="order-status text-center mb-5">
+            {% if not order.paid and order.payment_method == 'razorpay' and order.status != 'Cancelled' %}
+            <p class="text-danger">Payment is pending</p>
+            <a class="btn btn-primary" href="{% url 'continue_payment' order.id %}">Continue Payment</a>
+            {% endif %}
+
+            {% if order.status == 'Cancelled' or order.total_amount == 0 %}
+            <h3 class="text-danger">This Order was Cancelled</h3>
+            {% elif order.status == 'Delivered' %}
+            <h3 class="text-success">This Order was Delivered</h3>
+            <a href="{% url 'generate_invoice' order.id %}" class="btn btn-primary">Download Invoice</a>
+
+            {% elif order.status == 'Returned' %}
+            <h3 class="text-danger">This Order was Returned</h3>
+            {% else %}
+            <button class="btn btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#cancelOrderModal" data-url="{% url 'cancel_order' order.id %}">
+                Cancel This Order
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- Ordered Products -->
+        <h3 class="mb-4">Ordered Products</h3>
+        <div class="container">
+            <ul class="list-group">
+                {% for item in order_items %}
+                <li class="list-group-item custom-list-item mb-3">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <img src="{{ item.variant.images.first.images.url }}" alt="{{ item.product.product_name }}" class="table-img">
+                        </div>
+                        <div class="col product-details">
+                            <strong>{{ item.product.product_name }}</strong><br>
+                            {{ item.variant.colour }}<br>
+                            Size: {{ item.product.productsize.product_size }}
+                        </div>
+                        <div class="col text-center">
+                            Quantity: {{ item.quantity }}
+                        </div>
+                        <div class="col text-center">
+                            {% if item.product.brand_offer and item.product.product_offer %}
+                                {% if item.product.brand_offer < item.product.product_offer %}
+                                Price: ₹ {{ item.product.brand_offer }}
+                                {% else %}
+                                Price: ₹ {{ item.product.product_offer }}
+                                {% endif %}
+                            {% elif item.product.product_offer %}
+                            Price: ₹ {{ item.product.product_offer }}
+                            {% elif item.product.brand_offer %}
+                            Price: ₹ {{ item.product.brand_offer }}
+                            {% else %}
+                            Price: ₹ {{ item.product.price }}
+                            {% endif %}
+                        </div>
+                        <div class="col-auto action-btn">
+                            {% if item.order_item_status == 'Returned' %}
+                            <h5>Returned</h5>
+                            {% elif item.order_item_status == 'Cancelled' %}
+                            <h5 class="text-danger">Cancelled</h5>
+                            {% elif order.status == 'Delivered' %}
+                                <h5 class="text-success">Delivered</h5>
+                            {% elif order.status == 'Returned' %}
+                                <h5 class="text-danger">Returned</h5>
+                            {% elif order.status != 'Cancelled' %}
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#removeItemModal" data-url="{% url 'remove_order_item' order.id item.id %}">
+                                Remove
+                            </button>
+                            {% else %}
+                                <h5 class="text-danger">Item Removed</h5>
+                            {% endif %}
+                        </div>
+                        <div class="col-auto">
+                            {% if order.status == 'Delivered' and not order.return_request %}
+                            {% if item.order_item_status != 'Returned' and item.order_item_status != 'Cancelled' %}
+                            {% if item.item_return_request %}
+                            <span class="text-warning">requested for return</span>
+                            {% else %}
+                            <a href="{% url 'item_return_request' item.id order.id %}" class="btn btn-link">request for Return</a>
+                            {% endif %}
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+                
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Modal for Order Cancellation Confirmation -->
+    <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cancelOrderModalLabel">Confirm Order Cancellation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to cancel this order?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <a id="confirmCancelButton" href="{% url 'cancel_order' order.id %}" class="btn btn-danger">Ok</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal for Item Removal Confirmation -->
+    <div class="modal fade" id="removeItemModal" tabindex="-1" aria-labelledby="removeItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="removeItemModalLabel">Confirm Item Removal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to remove this item from the order?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <a id="confirmRemoveButton" href="#" class="btn btn-danger">Ok</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+   
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+    // Handle the modal for order cancellation
+    var cancelOrderModal = document.getElementById('cancelOrderModal');
+    cancelOrderModal.addEventListener('show.bs.modal', function(event) {
+        var button = event.relatedTarget;
+        var cancelUrl = button.getAttribute('data-url');
+        var confirmCancelButton = document.getElementById('confirmCancelButton');
+        confirmCancelButton.href = cancelUrl;
+    });
+});
+
+
+            // For item removal
+            var removeItemModal = document.getElementById('removeItemModal');
+            var confirmRemoveButton = document.getElementById('confirmRemoveButton');
+
+            removeItemModal.addEventListener('show.bs.modal', function(event) {
+                var button = event.relatedTarget;
+                var removeUrl = button.getAttribute('data-url');
+                confirmRemoveButton.href = removeUrl;
+            });
+
+    </script>
+</body>
+
+</html>
+{% endblock %}

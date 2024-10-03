@@ -1,0 +1,228 @@
+{% extends 'user_base.html' %}
+{% block content %}
+{% load static %}
+<style>
+    .pagination a {
+        margin: 0 5px;
+        padding: 5px 10px;
+        background-color: #f0f0f0;     
+        border: 1px solid #ddd;
+        text-decoration: none;
+    }
+
+    .pagination a:hover {
+        background-color: #ddd;
+    }
+
+    .pagination strong {
+        margin: 0 5px;
+        padding: 5px 10px;
+        background-color: #007bff;
+        color: white;
+        border: 1px solid #007bff;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+
+<!-- Breadcrumb Navigation -->
+<div aria-label="breadcrumb" class="ms-5 mt-5">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">SHOP</li>
+    </ol>
+</div>
+
+
+<!-- Search Bar -->
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <form class="d-flex" method="get"> 
+                <input class="form-control me-2 rounded-pill border-dark" type="text" placeholder="Search for products..." name="search" aria-label="Search" value="{{ request.GET.search }}">
+                <button class="btn btn-outline-dark rounded-pill" type="submit">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row">
+
+        <!-- Filter Section -->
+        <div class="col-lg-3">
+            <h1 class="h2 pb-4">Filter</h1>
+            <form method="get" action="" id="filter-form">
+                
+                <!-- Sort By Options -->
+                <div class="form-group">
+                    <select class="form-select" name="sort" onchange="document.getElementById('filter-form').submit();">
+                        <option value="">Sort by</option>
+                        <option value="new_arrivals" {% if request.GET.sort == 'new_arrivals' %}selected{% endif %}>New Arrivals</option>
+                        <option value="a_to_z" {% if request.GET.sort == 'a_to_z' %}selected{% endif %}>A - Z</option>
+                        <option value="z_to_a" {% if request.GET.sort == 'z_to_a' %}selected{% endif %}>Z - A</option>
+                        <option value="price_low_to_high" {% if request.GET.sort == 'price_low_to_high' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="price_high_to_low" {% if request.GET.sort == 'price_high_to_low' %}selected{% endif %}>Price: High to Low</option>
+                    </select>
+                </div>
+
+                <!-- Filter by Brand -->
+                <div class="form-group">
+                    <label>Brand</label>
+                    <div>
+                        {% for brand in brands %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="brand" id="brand{{ brand.id }}" value="{{ brand.id }}" {% if request.GET.brand == brand.id|stringformat:"s" %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                            <label class="form-check-label" for="brand{{ brand.id }}">{{ brand.brand_name }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Filter by Type -->
+                <div class="form-group">
+                    <label>Type</label>
+                    <div>
+                        {% for type in types %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="type" id="type{{ type.id }}" value="{{ type.id }}" {% if request.GET.type == type.id|stringformat:"s" %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                            <label class="form-check-label" for="type{{ type.id }}">{{ type.product_type }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Filter by Size -->
+                <div class="form-group">
+                    <label>Size</label>
+                    <div>
+                        {% for size in sizes %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="size" id="size{{ size.id }}" value="{{ size.id }}" {% if request.GET.size == size.id|stringformat:"s" %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                            <label class="form-check-label" for="size{{ size.id }}">{{ size.product_size }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Product Listing Section -->
+        <div class="col-lg-9">
+            <div class="row">
+                {% for product in page_obj.object_list %}
+                {% if product.variants.first and product.variants.first.images.first %}
+                {% with product.variants.first as variant %}
+                {% with variant.images.first as image %}
+                <div class="col-md-4">
+                    <div class="card mb-4 product-wap rounded-0">
+                        <div class="position-relative">
+
+                            <!-- Display Offers -->
+
+                             {% if product.product_offer and product.brand_offer%}
+                                {% if product.brand_offer < product.product_offer %}
+                                <span class="badge bg-success position-absolute" style="top: 0; left: 0; z-index: 1;">
+                                {{ product.productbrand.brandoffers.first.brand_offer_percentage }}% offer
+                                </span>
+                                {% else %}
+                                <span class="badge bg-success position-absolute" style="top: 0; left: 0; z-index: 1;">
+                                    {{ product.productoffers.first.product_offer_percentage }}% offer
+                                </span>
+                                {% endif %}
+                            {% elif product.product_offer %}
+                                <span class="badge bg-success position-absolute" style="top: 0; left: 0; z-index: 1;">
+                                    {{ product.productoffers.first.product_offer_percentage }}% offer
+                                </span>
+                            {% elif product.brand_offer %}
+                                <span class="badge bg-success position-absolute" style="top: 0; left: 0; z-index: 1;">
+                                    {{ product.productbrand.brandoffers.first.brand_offer_percentage }}% offer
+                                </span>
+                             {%endif%}
+                            
+                            
+                                
+                                   
+                                   
+                            
+                                <!-- <span class="badge bg-success position-absolute" style="top: 0; left: 0; z-index: 1;"> -->
+                              
+                         
+                            
+                            <!-- Product Image -->
+                            <div class="card rounded-0">
+                                <img class="card-img rounded-0 img-fluid" style="max-height: 300px;" src="{{ image.images.url }}" alt="{{ product.product_name }}">
+                                <div class="card-img-overlay rounded-0 product-overlay d-flex align-items-center justify-content-center">
+                                    <ul class="list-unstyled">
+                                        <li><a class="btn btn-success text-white mt-2" href="{% url 'single_product' product.id variant.id image.id %}"><i class="far fa-eye"></i></a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body text-center">
+                            <a href="{% url 'single_product' product.id variant.id image.id %}" class="h5 text-decoration-none product-name mb-2">{{ product.product_name }}</a>
+                            <p class="product-type mb-1 text-muted">{{ product.producttype.product_type }}</p>
+                            <p class="product-size mb-3 text-muted">{{ product.productsize.product_size }}</p>
+                            
+                            <p class="text-center mb-0">
+                                {% if product.product_offer and product.brand_offer %}
+                                    {% if product.brand_offer < product.product_offer %}
+                                        <span class="fw-bold text-success">₹{{ product.brand_offer }}</span>
+                                    {% else %}
+                                        <span class="fw-bold text-success">₹{{ product.product_offer }}</span>
+                                    {% endif %}
+                                {% elif product.product_offer %}
+                                    <span class="fw-bold text-success">₹{{ product.product_offer }}</span>
+                                {% elif product.brand_offer %}
+                                    <span class="fw-bold text-success">₹{{ product.brand_offer }}</span>
+                                {% else %}
+                                    <span class="fw-bold">₹{{ product.price }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                           
+                    </div>
+                </div>
+                {% endwith %}
+                {% endwith %}
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+             
+    <div class="d-flex justify-content-center">
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+    </div>
+</div>
+{% endblock %}

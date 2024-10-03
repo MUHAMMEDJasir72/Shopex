@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-header">
+        <h1>Shopex Online Bag Shoping Order Invoice</h1>
+        <p>Order ID: {{ order.id }}</p>
+        <p>Order Date: {{ order.ordered_at|date:"F j, Y" }}</p>
+        <p>Delivered at: {{ order.delivered_at|date:"F j, Y" }}</p>
+    </div>
+    <h2>Order Details:</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Colour</th>
+                <th>Size</th>
+                <th>Quantity</th>
+                <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ item.product.product_name }}</td>
+                <td>{{ item.variant.colour }}</td>
+                <td>{{ item.product.productsize.product_size }}</td>
+                <td>{{ item.quantity }}</td>
+                {% if item.product.brand_offer and item.product.product_offer %}
+                    {% if item.product.brand_offer < item.product.product_offer %}
+                       <td>{{ item.product.brand_offer }}</td>
+                    {% else %}
+                       <td>{{ item.product.product_offer }}</td>
+                    {% endif %}
+                {% elif item.product.product_offer %}
+                   <td>{{ item.product.product_offer }}</td>
+                {% elif item.product.brand_offer %}
+                    <td>{{ item.product.brand_offer }}</td>
+                {% else %}
+                    <td>{{ item.product.price }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if order.coupon %}
+    <h3>Coupon Discount: {{ order.coupon.percentage}}%</h3>
+    {% endif %}
+    <h3>Total: {{ order.total_amount }}</h3>
+    
+    
+</body>
+</html>

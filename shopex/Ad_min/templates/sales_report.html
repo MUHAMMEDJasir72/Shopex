@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container mt-5">
+    <!-- Sales Chart Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="card-title">Sales Chart</h3>
+                <div>
+                    <select class="form-select" id="filter-select" style="width: auto; display: inline-block;">
+                        <option value="month">Monthly</option>
+                        <option value="week">Weekly</option>
+                        <option value="year">Yearly</option>
+                    </select>
+                </div>
+            </div>
+            <canvas id="sales-chart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">Sales Report</h3>
+        <div>
+            <a href="{% url 'export_sales_report_pdf' %}?filter={{ filter }}&start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}" class="btn btn-outline-secondary">Export as PDF</a>
+            <a href="{% url 'export_sales_report_excel' %}?filter={{ filter }}&start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}" class="btn btn-outline-secondary ms-2">Export as Excel</a>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{% url 'sales_report' %}">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <select name="filter" class="form-select" id="filter" onchange="toggleDateInputs()">
+                            <option value="all" {% if request.GET.filter == 'all' %}selected{% endif %}>All</option>
+                            <option value="daily" {% if request.GET.filter == 'daily' %}selected{% endif %}>Daily</option>
+                            <option value="weekly" {% if request.GET.filter == 'weekly' %}selected{% endif %}>Weekly</option>
+                            <option value="monthly" {% if request.GET.filter == 'monthly' %}selected{% endif %}>Monthly</option>
+                            <option value="custom" {% if request.GET.filter == 'custom' %}selected{% endif %}>Custom</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="date" name="start_date" class="form-control" value="{{ request.GET.start_date }}" id="start_date" placeholder="Start Date" {% if request.GET.filter != 'custom' %}disabled{% endif %}>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="date" name="end_date" class="form-control" value="{{ request.GET.end_date }}" id="end_date" placeholder="End Date" {% if request.GET.filter != 'custom' %}disabled{% endif %}>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Overall Stats Section -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Overall Sales Count</h5>
+                    <h2>{{ sales_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Overall Amount</h5>
+                    <h2>₹{{ total_amount }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Overall Discount</h5>
+                    <h2>₹{{ total_discount }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Report Table -->
+    <div class="table-responsive mb-4">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Order ID</th>
+                    <th scope="col">User Name</th>
+                    <th scope="col">Total Amount</th>
+                    <th scope="col">Ordered at</th>
+                    <th scope="col">Delivered at</th>
+                    <th scope="col">Payment Method</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in page_obj %}
+                {% if order.status != 'Cancelled' %}
+                <tr>
+                    <td>{{ order.id }}</td>
+                    <td>{{ order.user.username }}</td>
+                    <td>₹{{ order.total_amount }}</td>
+                    <td>{{ order.ordered_at|date:"Y-m-d" }}</td>
+                    <td>{{ order.delivered_at|date:"Y-m-d" }}</td>
+                    <td>{{ order.payment_method }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-center">
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        let chart;
+
+        function fetchSalesData(filter) {
+            $.ajax({
+                url: '{% url "total_sales_count" %}',
+                data: { 'filter': filter },
+                success: function(data) {
+                    updateChart(data.labels, data.counts);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching data:', error);
+                }
+            });
+        }
+
+        function updateChart(labels, counts) {
+            if (chart) {
+                chart.destroy();
+            }
+            const ctx = document.getElementById('sales-chart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Sales Count',
+                        data: counts,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
+
+        $('#filter-select').change(function() {
+            const filter = $(this).val();
+            fetchSalesData(filter);
+        });
+
+        fetchSalesData('month');
+    });
+
+    function toggleDateInputs() {
+        const filter = document.getElementById('filter').value;
+        const startDate = document.getElementById('start_date');
+        const endDate = document.getElementById('end_date');
+        if (filter === 'custom') {
+            startDate.disabled = false;
+            endDate.disabled = false;
+        } else {
+            startDate.disabled = true;
+            endDate.disabled = true;
+        }
+    }
+</script>
+
+{% endblock %}

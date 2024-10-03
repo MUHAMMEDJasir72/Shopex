@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Coupon</title>
+    <!-- Include Bootstrap 5 CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .delete-icon i {
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+        .delete-icon:hover i {
+            transform: scale(1.5); /* Increase size on hover */
+            color: red; /* Change color to red on hover */
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header text-center">
+                        <h2 class="mb-0">Add New Coupon</h2>
+                    </div>
+                    <div class="card-body">
+                        {% if messages %}
+                        <script>
+                        Swal.fire({
+                            title: 'Success!',
+                            text: '{% for message in messages %}{{ message }}{% endfor %}',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        });
+                        </script>
+                        {% endif %}
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="percentage" class="form-label">Discount (%)</label>
+                                <input type="number" class="form-control" id="percentage" name="percentage" step="0.01"
+                                min="5" max="90" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="minimum_amount" class="form-label">Minimum Amount (₹)</label>
+                                <input type="number" class="form-control" id="minimum_amount" name="minimum_amount" min="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="maximum_amount" class="form-label">Maximum Amount (₹)</label>
+                                <input type="number" class="form-control" id="maximum_amount" name="maximum_amount" min="1" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="expiration_date" class="form-label">Expiration Date</label>
+                                <input type="date" class="form-control" id="expiration_date" name="expiration_date" required min="{{ today }}">
+                            </div>                            
+                            <button type="submit" class="btn btn-success w-100">Add Coupon</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container mt-4">
+            <div class="row justify-content-center">
+                <div class="col-md-10">
+                    <div class="table-responsive shadow-sm">
+                        <table class="table table-bordered">
+                            <!-- Table Header -->
+                            <thead class="table-success text-center">
+                                <tr>
+                                    <th scope="col">Coupon Id</th>
+                                    <th scope="col">Coupon Code</th>
+                                    <th scope="col">Discount (%)</th>
+                                    <th scope="col">Expiration Date</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Minimum Amount</th>
+                                    <th scope="col">Maximum Amount</th>
+                                    <th scope="col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-center">
+                                <!-- Coupon Rows -->
+                                {% for coupon in coupons_list %}
+                                    <tr>
+                                        <td>{{ coupon.id }}</td>
+                                        <td>{{ coupon.code }}</td>
+                                        <td>{{ coupon.percentage }}%</td>
+                                        <td>{{ coupon.expiration_date|date:"d-m-Y" }}</td>
+                                        {% if coupon.active %}
+                                            <td class="text-success">Active</td>
+                                        {% else %}
+                                            <td class="text-danger">Expired</td>
+                                        {% endif %}
+                                        <td>{{ coupon.minimum_amount }}</td>
+                                        <td>{{ coupon.maximum_amount }}</td>
+                                        <td>
+                                            <a class="btn btn-warning edit-btn" data-bs-toggle="modal" data-bs-target="#editCouponModal" 
+                                               data-id="{{ coupon.id }}" 
+                                               data-code="{{ coupon.code }}" 
+                                               data-percentage="{{ coupon.percentage }}"
+                                               data-minimum="{{ coupon.minimum_amount }}"
+                                               data-maximum="{{ coupon.maximum_amount }}"
+                                               data-expiration="{{ coupon.expiration_date|date:'Y-m-d' }}">
+                                                Edit
+                                            </a>
+                                            <a class="btn delete-icon" href="{% url 'delete_coupon' coupon.id %}">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Coupon Modal -->
+        <div class="modal fade" id="editCouponModal" tabindex="-1" aria-labelledby="editCouponModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editCouponModalLabel">Edit Coupon</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editCouponForm" method="post" action="{% url 'edit_coupon' %}">
+                            {% csrf_token %}
+                            <input type="hidden" id="editCouponId" name="coupon_id">
+
+                            <div class="mb-3">
+                                <label for="editCode" class="form-label">Coupon Code</label>
+                                <input type="text" class="form-control" id="editCode" name="code" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="editPercentage" class="form-label">Discount (%)</label>
+                                <input type="number" class="form-control" id="editPercentage" name="percentage" min="5" max="90" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="editMinimumAmount" class="form-label">Minimum Amount (₹)</label>
+                                <input type="number" class="form-control" id="editMinimumAmount" name="minimum_amount" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="editMaximumAmount" class="form-label">Maximum Amount (₹)</label>
+                                <input type="number" class="form-control" id="editMaximumAmount" name="maximum_amount" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="editExpirationDate" class="form-label">Expiration Date</label>
+                                <input type="date" class="form-control" id="editExpirationDate" name="expiration_date" required min="{{ today }}">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Bootstrap 5 JS (optional) -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // When the Edit button is clicked, populate the modal with coupon data
+        document.querySelectorAll('.edit-btn').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const couponId = this.dataset.id;
+                const couponCode = this.dataset.code;
+                const couponPercentage = this.dataset.percentage;
+                const couponMinimum = this.dataset.minimum;
+                const couponMaximum = this.dataset.maximum;
+                const couponExpiration = this.dataset.expiration;
+
+                // Fill the modal fields with the current coupon data
+                document.getElementById('editCouponId').value = couponId;
+                document.getElementById('editCode').value = couponCode;
+                document.getElementById('editPercentage').value = couponPercentage;
+                document.getElementById('editMinimumAmount').value = couponMinimum;
+                document.getElementById('editMaximumAmount').value = couponMaximum;
+                document.getElementById('editExpirationDate').value = couponExpiration;
+            });
+        });
+    </script>
+</body>
+</html>
+
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .table-img {
+        width: 80px; /* Adjust the width as needed */
+        height: auto; /* Maintain aspect ratio */
+        object-fit: cover; /* Ensure the image covers the area without distortion */
+    }
+    .delete-icon i {
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.delete-icon:hover i {
+  transform: scale(1.5); /* Increase size on hover */
+  color: red; /* Change color to red on hover */
+}
+</style>
+
+<div class="container mt-5">
+    <h2 class="p-3 text-center">Order Items</h2>
+
+    <div class="row p-3">
+        <!-- Address -->
+        <div class="col-md-6">
+            <div class="card text-bg-secondary">
+                <div class="card-header text-center">
+                    <h3>Ordered To</h3>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title">{{ address.fullname }}</h6>
+                    <p>{{ address.address }}, {{ address.landmark }}</p>
+                    <p>{{ address.city }}, {{ address.pincode }}</p>
+                    <p>{{ address.state }}, {{ address.mobil_number }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Amount and Coupon Discount -->
+        <div class="col-md-6">
+            <!-- Total Amount Card -->
+            <div class="card mb-3">
+                <div class="card-header text-center">
+                    <h3>Total Amount</h3>
+                </div>
+                <div class="card-body text-center">
+                    <h4>₹ {{ order.total_amount }}</h4>
+                </div>
+            </div>
+
+            <!-- Coupon Discount Card -->
+            {% if order.coupon %}
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3>Coupon Discount</h3>
+                </div>
+                <div class="card-body text-center">
+                    <h4>₹ {{ discount}}</h4>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    
+
+    <!-- Dropdown Section (Right Aligned) -->
+    {% if order.status != 'Delivered' and order.status != 'Cancelled' and order.status != 'Returned' %}
+    <a class="btn btn-danger" href="{% url 'cancel_user_order' order.id %}"> cancel order</a>
+    <div class="d-flex justify-content-end align-items-center mb-3">
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                Change Status
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                {% if order.status != 'Shipped' %}
+                <li><a class="dropdown-item" href="{% url 'order_status' order.id 'Pending' %}">Pending</a></li>
+                {% endif %}
+                <li><a class="dropdown-item" href="{% url 'order_status' order.id 'Shipped' %}">Shipped</a></li>
+                <li><a class="dropdown-item" href="{% url 'order_status' order.id 'Delivered' %}">Delivered</a></li>
+                <li><a class="dropdown-item" href="{% url 'order_status' order.id 'Cancelled' %}">Cancelled</a></li>
+            </ul>
+        </div>
+    </div>
+{% else %}
+    {% if order.status == 'Cancelled' %}
+    <h1 class="text-center text-danger">Order Cancelled</h1>
+    {% elif order.status == 'Delivered' %}
+    <h1 class="text-center text-success">Order Delivered</h1>
+    {% elif order.status == 'Returned' %}
+    <h1 class="text-center text-danger">Order Returned</h1>
+    {% endif %}
+{% endif %}
+{% if order.return_request %}
+ <a class="btn btn-primary" href="{% url 'approve_return' order.id %}">Approve return</a>
+ {% endif %}
+
+    <!-- Items Table -->
+    <table class="table table-bordered text-center">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>Product ID</th>
+                <th>Product Name</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Brand</th>
+                <th>Type</th>
+                <th>Color</th>
+                <th>Size</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>
+                    <img src="{{ item.variant.images.first.images.url }}" alt="{{ item.product.product_name }}" class="table-img">
+                </td>
+                <td>{{ item.product.id }}</td>
+                <td>{{ item.product.product_name }}</td>
+                <td>{{ item.quantity }}</td>
+                {% if item.product.brand_offer and item.product.product_offer %}
+                {% if item.product.brand_offer < item.product.product_offer %}
+                <td>Price: ₹ {{ item.product.brand_offer }}</td>
+                {% else %}
+                <td>Price: ₹ {{ item.product.product_offer }}</td>
+                {% endif %}
+                {% elif item.product.product_offer %}
+                <td>Price: ₹ {{ item.product.product_offer }}</td>
+                {% elif item.product.brand_offer %}
+                <td>Price: ₹ {{ item.product.brand_offer }}</td>
+                {% else %}
+                <td>Price: ₹ {{ item.product.price }}</td>
+                {% endif %} 
+                <td>{{ item.product.productbrand.brand_name }}</td>
+                <td>{{ item.product.producttype.product_type }}</td>
+                <td>{{ item.variant.colour }}</td>
+                <td>{{ item.product.productsize.product_size }}</td>
+        
+                {% if order.status != 'Cancelled' %}
+                {% if order.status == 'Delivered' %}
+                {% if item.item_return_request %}
+                <td>Rquested to return <a href="{% url 'approve_item_return' order.id item.id %}">approve</a></td>
+                {% elif item.order_item_status == 'Returned' %}
+                <td>Returned</td>
+                {% elif item.order_item_status == 'Cancelled' %}
+                <td class="text-danger">Cancelled</td>
+                {% else %}
+                <td class="text-success">Delivered</td>
+                {% endif %}
+                {% elif item.order_item_status == 'Returned' %}
+                <td>Returned</td>
+                {% elif item.order_item_status == 'Cancelled' %}
+                <td class="text-danger">Cancelled</td>
+                {% elif order.status == 'Returned' %}
+                <td>Returned</td>
+                {% else %} 
+                <td>
+                    <a class="btn delete-icon" href="{% url 'remove_user_order' order.id item.id %}">
+                      <i class="fa-solid fa-trash"></i>
+                    </a>
+                </td>
+                {% endif %}
+                {% else %}
+                <td class="text-danger">Removed</td> 
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
