@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config
 
 
 
@@ -30,10 +31,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-w*g&_6z-xx-%082r3o55qharh8^99sl3p9zlj_3f^fqj(=cz+k'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', cast=bool, default=False)
 
 ALLOWED_HOSTS = []
 
@@ -97,7 +98,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'Shopex_db',
         'USER': 'postgres',
-        'PASSWORD': 'jasir snr',
+        'PASSWORD': config('PASSWORD'),
         'HOST': 'localhost', 
         'PORT': '5432',   
     }
@@ -162,8 +163,8 @@ SITE_ID = 1
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': '432526794469-d21122vujlkrpm46psffmfm33l26r12c.apps.googleusercontent.com',
-            'secret': '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',
+            'client_id': config('client_id'),
+            'secret': config('secret'),
             'key': ''
         },
         'SCOPE': [
@@ -184,11 +185,11 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'jasirsnr72@gmail.com'
-EMAIL_HOST_PASSWORD = 'wffp emts mfit jbof'
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = 'jasirsnr72@gmail.com'
 
 
 # Razorpay Credentials
-RAZORPAY_API_KEY = 'rzp_test_s3tQC1w8P27CUA'
-RAZORPAY_API_SECRET = 'm1KkuBkKq5GWMVoAO9QH6q5t'
+RAZORPAY_API_KEY = config('RAZORPAY_API_KEY')
+RAZORPAY_API_SECRET = config('RAZORPAY_API_SECRET')
