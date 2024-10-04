@@ -542,9 +542,22 @@ def order_status(request, order_id, new_status):
     # Update the status of the order
     order = Order.objects.get(id=order_id)
     order.status = new_status
+    wallet_item, created = Wallet.objects.get_or_create(user=request.user)
     if new_status == 'Delivered':
         order.delivered_at = timezone.now()
         order.paid = True
+    
+    elif new_status == 'Cancelled':
+        if order.payment_method in ['razorpay', 'wallet']:
+            wallet_item.wallet_amount += order.total_amount
+            trans = order.total_amount
+            wallet_item.save()
+            
+            Transaction.objects.create(
+                wallet = wallet_item,
+                transaction_amount = trans,
+                type = 'Credit'
+            )
 
     order.save()
 
